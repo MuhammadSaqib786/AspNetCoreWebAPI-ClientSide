@@ -1,16 +1,26 @@
 ﻿using AspNetCoreWebAPI_ClientSide.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace AspNetCoreWebAPI_ClientSide.Controllers
 {
     public class ProductController : Controller
     {
         // GET: ProductController
-        public ActionResult Index()
+        public async Task<ActionResult> Index()
         {
-            
-            return View();
+            List<Product> products = new List<Product>();
+            using (var client = new HttpClient())
+            {
+                using(var response = await client.GetAsync("http://localhost:5048/api/Products"))
+                {
+                    string apiResponse = await  response.Content.ReadAsStringAsync();
+                    products = JsonConvert.DeserializeObject<List<Product>>(apiResponse);
+                }
+            }
+             return View(products);
         }
 
         // GET: ProductController/Details/5
