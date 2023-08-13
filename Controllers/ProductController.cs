@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
+using System.Text;
 using System.Text.Json.Serialization;
 
 namespace AspNetCoreWebAPI_ClientSide.Controllers
@@ -69,25 +70,58 @@ namespace AspNetCoreWebAPI_ClientSide.Controllers
         }
 
         // GET: ProductController/Edit/5
-        public ActionResult Edit(int id)
+        public async Task<ActionResult> Edit(int id)
         {
-            return View();
+            Product product = null;
+
+            using (var client = new HttpClient())
+            {
+                string apiurl = "http://localhost:5048/api/Products/" + id;
+                using (var response = await client.GetAsync(apiurl))
+                {
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    product = JsonConvert.DeserializeObject<Product>(apiResponse);
+                }
+            }
+
+            return View(product);
         }
 
         // POST: ProductController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Edit(int id, IFormCollection collection)
+        public async Task<ActionResult> Edit(Product product)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction(nameof(Index));
+                return View(product); // Return with validation errors
             }
-            catch
+
+            string json = JsonConvert.SerializeObject(product);
+
+            using (var client = new HttpClient())
             {
-                return View();
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await client.PutAsync($"http://localhost:5048/api/Products/{product.ProductId}", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return RedirectToAction(nameof(Index)); // Redirect to the index page on success
+                }
+                else if (response.StatusCode == System.Net.HttpStatusCode.BadRequest)
+                {
+                    ModelState.AddModelError(string.Empty, "Product ID mismatch.");
+                    return View(product);
+                }
+                else
+                {
+                    // Handle other errors, maybe log them and show an error message to the user
+                    ModelState.AddModelError(string.Empty, "An error occurred while updating the product.");
+                    return View(product);
+                }
             }
         }
+
 
         // GET: ProductController/Delete/5
         public ActionResult Delete(int id)
