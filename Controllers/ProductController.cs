@@ -143,9 +143,25 @@ namespace AspNetCoreWebAPI_ClientSide.Controllers
 
 
         // GET: ProductController/Delete/5
-        public ActionResult Delete(int id)
+        public async Task<ActionResult> Delete(int id)
         {
-            return View();
+            using (var client = new HttpClient())
+            {
+                var response = await client.DeleteAsync($"http://localhost:5048/api/Products/{id}");
+                if (response.IsSuccessStatusCode)
+                {
+                    // Handle success, redirect to the Index action
+                    return RedirectToAction("Index");
+                }
+                else
+                {
+                    // Handle error, show an error message to the user
+                    ModelState.AddModelError(string.Empty, "An error occurred while deleting the product.");
+                    return View(); // Return the current view (or specify another view) with the error message
+                }
+            }
+
+         
         }
 
         // POST: ProductController/Delete/5
