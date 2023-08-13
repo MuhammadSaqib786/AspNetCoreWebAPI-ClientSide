@@ -54,20 +54,39 @@ namespace AspNetCoreWebAPI_ClientSide.Controllers
             return View();
         }
 
-        // POST: ProductController/Create
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public ActionResult Create(IFormCollection collection)
+        public async Task<ActionResult> Create(Product product)
         {
-            try
+            if (!ModelState.IsValid)
             {
-                return RedirectToAction(nameof(Index));
+                return View(product); // Return with validation errors
             }
-            catch
+
+            string json = JsonConvert.SerializeObject(new
             {
-                return View();
+                name = product.Name,
+                price = product.Price
+            });
+
+            using (var client = new HttpClient())
+            {
+                var content = new StringContent(json, Encoding.UTF8, "application/json");
+                var response = await client.PostAsync("http://localhost:5048/api/Products", content);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    return RedirectToAction(nameof(Index)); // Redirect to the index page on success
+                }
+                else
+                {
+                    // Handle errors, maybe log them and show an error message to the user
+                    ModelState.AddModelError(string.Empty, "An error occurred while creating the product.");
+                    return View(product);
+                }
             }
         }
+
 
         // GET: ProductController/Edit/5
         public async Task<ActionResult> Edit(int id)
