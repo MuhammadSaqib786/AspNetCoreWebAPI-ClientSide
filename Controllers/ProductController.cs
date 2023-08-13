@@ -8,6 +8,8 @@ namespace AspNetCoreWebAPI_ClientSide.Controllers
 {
     public class ProductController : Controller
     {
+        
+
         // GET: ProductController
         public async Task<ActionResult> Index()
         {
@@ -24,10 +26,26 @@ namespace AspNetCoreWebAPI_ClientSide.Controllers
         }
 
         // GET: ProductController/Details/5
-        public ActionResult Details(int id)
+        
+        public async Task<ActionResult> Details(int? id)
         {
-            return View();
+            Product product = null;
+            
+            using (var client = new HttpClient())
+            {
+                string apiurl = "http://localhost:5048/api/Products/" + id;
+                using (var response = await client.GetAsync(apiurl))
+                {
+                    string apiResponse = await response.Content.ReadAsStringAsync();
+                    product = JsonConvert.DeserializeObject<Product>(apiResponse);
+                }
+            }
+
+            return View(product);
         }
+
+
+
 
         // GET: ProductController/Create
         public ActionResult Create()
